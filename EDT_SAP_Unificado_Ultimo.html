@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EDT Interactiva - Implementación ERP SAP S/4HANA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-level-0: #0F172A;
+            --color-level-1: #1E40AF;
+            --color-level-2: #3B82F6;
+            --color-level-3: #93C5FD;
+            --color-package: #DBEAFE;
+            --color-accent: #F59E0B;
+            --color-success: #10B981;
+            --color-bg: #F8FAFC;
+            --color-surface: #FFFFFF;
+            --color-text: #1E293B;
+            --color-text-muted: #64748B;
+            --color-border: #E2E8F0;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background Pattern */
+        .bg-pattern {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Main Container */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: var(--color-surface);
+            border-radius: var(--radius-xl);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-border);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .header-info h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-level-0);
+            letter-spacing: -0.025em;
+        }
+
+        .header-info p {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, var(--color-level-1), var(--color-level-2));
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .header-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--color-success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            background: var(--color-bg);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-muted);
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: var(--color-text);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .tab-btn.active {
+            background: var(--color-surface);
+            color: var(--color-level-1);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.package {
+            border: 2px dashed var(--color-level-2);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--color-level-0) 0%, var(--color-level-1) 100%);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Diagram Viewport */
+        .diagram-container {
+            position: relative;
+            flex: 1;
+            min-height: 500px;
+            background: var(--color-surface);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-border);
+            overflow: hidden;
+        }
+
+        #diagram-viewport {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle, var(--color-border) 1px, transparent 1px);
+            background-size: 24px 24px;
+            touch-action: none;
+        }
+
+        #diagram-viewport:active {
+            cursor: grabbing;
+        }
+
+        #wbs-content {
+            transform-origin: 0 0;
+            transition: transform 0.1s ease-out;
+            width: max-content;
+            padding: 40px 60px 80px;
+            margin: 0 auto;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--color-surface);
+            padding: 8px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-border);
+        }
+
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-text);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: var(--color-level-2);
+            color: white;
+            border-color: var(--color-level-2);
+        }
+
+        .zoom-level {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 4px 0;
+        }
+
+        /* Mini Legend */
+        .mini-legend {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            z-index: 20;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 0.75rem;
+            max-width: 90%;
+        }
+
+        /* WBS Nodes */
+        .wbs-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .node-box {
+            position: relative;
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .node-box:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .node-box.level-0 {
+            background: linear-gradient(135deg, var(--color-level-0) 0%, #1E3A5F 100%);
+            color: white;
+            min-width: 280px;
+            max-width: 320px;
+            padding: 16px 24px;
+        }
+
+        .node-box.level-1 {
+            background: linear-gradient(135deg, var(--color-level-1) 0%, #2563EB 100%);
+            color: white;
+            min-width: 160px;
+            max-width: 200px;
+        }
+
+        .node-box.level-2 {
+            background: linear-gradient(135deg, var(--color-level-2) 0%, #60A5FA 100%);
+            color: white;
+            min-width: 140px;
+            max-width: 180px;
+        }
+
+        .node-box.level-3 {
+            background: var(--color-level-3);
+            color: var(--color-level-0);
+            min-width: 130px;
+            max-width: 170px;
+        }
+
+        .node-box.package {
+            background: var(--color-package);
+            color: var(--color-level-0);
+            border: 2px dashed var(--color-level-2);
+        }
+
+        .node-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            opacity: 0.85;
+            margin-bottom: 4px;
+        }
+
+        .node-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .level-0 .node-title {
+            font-size: 0.95rem;
+        }
+
+        .package-indicator {
+            font-size: 0.65rem;
+            margin-top: 6px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        /* Toggle Button */
+        .toggle-btn {
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--color-surface);
+            border: 2px solid var(--color-level-2);
+            color: var(--color-level-2);
+            font-size: 0.875rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 5;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .toggle-btn:hover {
+            background: var(--color-level-2);
+            color: white;
+        }
+
+        /* Connector Lines */
+        .vertical-line {
+            width: 2px;
+            height: 24px;
+            background: var(--color-level-2);
+        }
+
+        .children-container {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+
+        .children-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-level-2);
+        }
+
+        .child-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .child-wrapper > .vertical-line {
+            height: 16px;
+        }
+
+        .children-container.hidden {
+            display: none;
+        }
+
+        /* Dictionary Tab */
+        .dictionary-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .dictionary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 16px;
+        }
+
+        @media (max-width: 500px) {
+            .dictionary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dict-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
+            transition: all 0.2s ease;
+        }
+
+        .dict-card:hover {
+            box-shadow: var(--shadow-xl);
+            transform: translateY(-2px);
+        }
+
+        .dict-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .dict-code {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--color-level-1), var(--color-level-2));
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .dict-cost {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-success);
+        }
+
+        .dict-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin: 8px 0;
+        }
+
+        .dict-desc {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .dict-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .dict-meta-item {
+            font-size: 0.8rem;
+        }
+
+        .dict-meta-label {
+            color: var(--color-text-muted);
+            margin-bottom: 2px;
+        }
+
+        .dict-meta-value {
+            color: var(--color-text);
+            font-weight: 500;
+        }
+
+        .dict-criteria {
+            grid-column: 1 / -1;
+            background: rgba(59, 130, 246, 0.05);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--color-level-2);
+        }
+
+        /* Phase Filter */
+        .phase-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--color-level-2);
+            color: var(--color-level-2);
+        }
+
+        .filter-btn.active {
+            background: var(--color-level-2);
+            color: white;
+            border-color: var(--color-level-2);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .footer strong {
+            color: var(--color-text);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px;
+            }
+            
+            .header-info h1 {
+                font-size: 1.25rem;
+            }
+
+            .mini-legend {
+                display: none;
+            }
+
+            .stats-bar {
+                margin-top: 12px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .zoom-controls, .mini-legend, .tab-nav {
+                display: none !important;
+            }
+            
+            .diagram-container {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    
+    <div class="main-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-info">
+                <h1>📊 Estructura de Desglose del Trabajo (EDT/WBS)</h1>
+                <p>Proyecto: ERP-2025-001 | SAP S/4HANA</p>
+                <p>Elaborado por: EDGAR RAMIREZ GUZMAN | CONTADURIA PUBLICA | UNIVERSIDAD LAMAR</p>
+                <div class="header-badge">Metodología ASAP + PMBOK® 7</div>
+            </div>
+            
+            <nav class="tab-nav">
+                <button class="tab-btn active" onclick="switchTab('diagram')" id="btn-diagram">
+                    🗂️ Diagrama
+                </button>
+                <button class="tab-btn" onclick="switchTab('dictionary')" id="btn-dictionary">
+                    📋 Diccionario
+                </button>
+            </nav>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value">6</div>
+                <div class="stat-label">Fases del Proyecto</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">18</div>
+                <div class="stat-label">Entregables (Nivel 2)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">47</div>
+                <div class="stat-label">Paquetes de Trabajo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">4</div>
+                <div class="stat-label">Niveles de Profundidad</div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area" style="margin-top: 16px;">
+            
+            <!-- Diagram Tab -->
+            <div class="tab-content active" id="tab-diagram">
+                <div class="diagram-container">
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomIn()" title="Acercar">+</button>
+                        <div class="zoom-level" id="zoom-level">100%</div>
+                        <button class="zoom-btn" onclick="zoomOut()" title="Alejar">−</button>
+                        <button class="zoom-btn" onclick="resetZoom()" title="Ajustar" style="font-size: 0.7rem;">FIT</button>
+                    </div>
+
+                    <div class="mini-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-level-0);"></div>
+                            <span>Proyecto</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-level-1);"></div>
+                            <span>Fase</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-level-2);"></div>
+                            <span>Entregable</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color package" style="background: var(--color-package);"></div>
+                            <span>Paquete</span>
+                        </div>
+                    </div>
+
+                    <div id="diagram-viewport">
+                        <div id="wbs-content">
+                            <div id="wbs-root"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dictionary Tab -->
+            <div class="tab-content" id="tab-dictionary">
+                <div class="phase-filter" id="phase-filter">
+                    <button class="filter-btn active" onclick="filterDict('all')">📁 Todos</button>
+                    <button class="filter-btn" onclick="filterDict('1.1')">1.1 Preparación</button>
+                    <button class="filter-btn" onclick="filterDict('1.2')">1.2 Blueprint</button>
+                    <button class="filter-btn" onclick="filterDict('1.3')">1.3 Realización</button>
+                    <button class="filter-btn" onclick="filterDict('1.4')">1.4 Preparación Final</button>
+                    <button class="filter-btn" onclick="filterDict('1.5')">1.5 Go-Live</button>
+                    <button class="filter-btn" onclick="filterDict('1.6')">1.6 Soporte Post</button>
+                </div>
+                <div class="dictionary-container">
+                    <div class="dictionary-grid" id="dictionary-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>EDT elaborada siguiendo estándares <strong>PMBOK® 7</strong> | Regla del 100% aplicada en todos los niveles</p>
+            <p style="margin-top: 4px;">Proyecto ERP-2025-001 | Versión 2.0 Unificada | Diciembre 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        // 1. DATOS COMPLETOS DE LA EDT (6 FASES)
+        // ============================================
+        const wbsData = {
+            code: "1.0",
+            title: "Implementación ERP SAP S/4HANA",
+            level: 0,
+            children: [
+                // FASE 1.1: PREPARACIÓN DEL PROYECTO
+                {
+                    code: "1.1",
+                    title: "Preparación del Proyecto",
+                    level: 1,
+                    children: [
+                        {
+                            code: "1.1.1",
+                            title: "Gestión del Proyecto",
+                            level: 2,
+                            children: [
+                                { code: "1.1.1.1", title: "Acta de Constitución", level: 3, isPackage: true },
+                                { code: "1.1.1.2", title: "Plan de Gestión", level: 3, isPackage: true },
+                                { code: "1.1.1.3", title: "Plan de Comunicaciones", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.1.2",
+                            title: "Infraestructura Inicial",
+                            level: 2,
+                            children: [
+                                { code: "1.1.2.1", title: "Ambiente Desarrollo", level: 3, isPackage: true },
+                                { code: "1.1.2.2", title: "Herramientas Instaladas", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.1.3",
+                            title: "Equipo Movilizado",
+                            level: 2,
+                            children: [
+                                { code: "1.1.3.1", title: "Equipo Interno", level: 3, isPackage: true },
+                                { code: "1.1.3.2", title: "Consultores Externos", level: 3, isPackage: true }
+                            ]
+                        }
+                    ]
+                },
+                // FASE 1.2: BLUEPRINT
+                {
+                    code: "1.2",
+                    title: "Blueprint",
+                    level: 1,
+                    children: [
+                        {
+                            code: "1.2.1",
+                            title: "Procesos AS-IS",
+                            level: 2,
+                            children: [
+                                { code: "1.2.1.1", title: "Finanzas AS-IS", level: 3, isPackage: true },
+                                { code: "1.2.1.2", title: "Ventas AS-IS", level: 3, isPackage: true },
+                                { code: "1.2.1.3", title: "Logística AS-IS", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.2.2",
+                            title: "Procesos TO-BE",
+                            level: 2,
+                            children: [
+                                { code: "1.2.2.1", title: "Blueprint FI/CO", level: 3, isPackage: true },
+                                { code: "1.2.2.2", title: "Blueprint SD/MM", level: 3, isPackage: true },
+                                { code: "1.2.2.3", title: "Blueprint PP/QM", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.2.3",
+                            title: "Análisis de GAPs",
+                            level: 2,
+                            children: [
+                                { code: "1.2.3.1", title: "GAPs Identificados", level: 3, isPackage: true },
+                                { code: "1.2.3.2", title: "Soluciones Propuestas", level: 3, isPackage: true }
+                            ]
+                        }
+                    ]
+                },
+                // FASE 1.3: REALIZACIÓN
+                {
+                    code: "1.3",
+                    title: "Realización",
+                    level: 1,
+                    children: [
+                        {
+                            code: "1.3.1",
+                            title: "Configuración Base",
+                            level: 2,
+                            children: [
+                                { code: "1.3.1.1", title: "Config. FI/CO", level: 3, isPackage: true },
+                                { code: "1.3.1.2", title: "Config. SD/MM", level: 3, isPackage: true },
+                                { code: "1.3.1.3", title: "Config. PP/QM", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.3.2",
+                            title: "Desarrollos ABAP",
+                            level: 2,
+                            children: [
+                                { code: "1.3.2.1", title: "Reportes Z", level: 3, isPackage: true },
+                                { code: "1.3.2.2", title: "Interfaces", level: 3, isPackage: true },
+                                { code: "1.3.2.3", title: "Formularios", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.3.3",
+                            title: "Pruebas Unitarias",
+                            level: 2,
+                            children: [
+                                { code: "1.3.3.1", title: "Scripts de Prueba", level: 3, isPackage: true },
+                                { code: "1.3.3.2", title: "Defectos Corregidos", level: 3, isPackage: true }
+                            ]
+                        }
+                    ]
+                },
+                // FASE 1.4: PREPARACIÓN FINAL
+                {
+                    code: "1.4",
+                    title: "Preparación Final",
+                    level: 1,
+                    children: [
+                        {
+                            code: "1.4.1",
+                            title: "Pruebas Integración",
+                            level: 2,
+                            children: [
+                                { code: "1.4.1.1", title: "Escenarios E2E", level: 3, isPackage: true },
+                                { code: "1.4.1.2", title: "Pruebas Rendimiento", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.4.2",
+                            title: "Migración de Datos",
+                            level: 2,
+                            children: [
+                                { code: "1.4.2.1", title: "Datos Maestros", level: 3, isPackage: true },
+                                { code: "1.4.2.2", title: "Saldos Iniciales", level: 3, isPackage: true },
+                                { code: "1.4.2.3", title: "Datos Históricos", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.4.3",
+                            title: "UAT",
+                            level: 2,
+                            children: [
+                                { code: "1.4.3.1", title: "Casos UAT Ejecutados", level: 3, isPackage: true },
+                                { code: "1.4.3.2", title: "Sign-off Usuarios", level: 3, isPackage: true }
+                            ]
+                        }
+                    ]
+                },
+                // FASE 1.5: GO-LIVE Y SOPORTE
+                {
+                    code: "1.5",
+                    title: "Go-Live y Soporte",
+                    level: 1,
+                    children: [
+                        {
+                            code: "1.5.1",
+                            title: "Capacitación",
+                            level: 2,
+                            children: [
+                                { code: "1.5.1.1", title: "Usuarios Clave", level: 3, isPackage: true },
+                                { code: "1.5.1.2", title: "Usuarios Finales", level: 3, isPackage: true },
+                                { code: "1.5.1.3", title: "Manuales Entregados", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.5.2",
+                            title: "Cutover",
+                            level: 2,
+                            children: [
+                                { code: "1.5.2.1", title: "Plan Cutover Ejecutado", level: 3, isPackage: true },
+                                { code: "1.5.2.2", title: "Ambiente Productivo", level: 3, isPackage: true },
+                                { code: "1.5.2.3", title: "Go-Live Certificado", level: 3, isPackage: true }
+                            ]
+                        }
+                    ]
+                },
+                // FASE 1.6: SOPORTE POST-IMPLEMENTACIÓN
+                {
+                    code: "1.6",
+                    title: "Soporte Post-Impl.",
+                    level: 1,
+                    children: [
+                        {
+                            code: "1.6.1",
+                            title: "Estabilización",
+                            level: 2,
+                            children: [
+                                { code: "1.6.1.1", title: "Incidentes Resueltos", level: 3, isPackage: true },
+                                { code: "1.6.1.2", title: "Ajustes Config.", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.6.2",
+                            title: "Transferencia Conocimiento",
+                            level: 2,
+                            children: [
+                                { code: "1.6.2.1", title: "Doc. Técnica", level: 3, isPackage: true },
+                                { code: "1.6.2.2", title: "Equipo Soporte", level: 3, isPackage: true }
+                            ]
+                        },
+                        {
+                            code: "1.6.3",
+                            title: "Cierre del Proyecto",
+                            level: 2,
+                            children: [
+                                { code: "1.6.3.1", title: "Lecciones Aprendidas", level: 3, isPackage: true },
+                                { code: "1.6.3.2", title: "Acta de Cierre", level: 3, isPackage: true }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // ============================================
+        // 2. DICCIONARIO COMPLETO DE LA EDT
+        // ============================================
+        const dictionaryData = [
+            // Fase 1.1
+            { code: '1.1.1.1', name: 'Acta de Constitución Aprobada', phase: '1.1',
+              desc: 'Documento formal que autoriza el proyecto, define objetivos, alcance preliminar, stakeholders clave y autoridad del Project Manager.',
+              criteria: 'Firma del Sponsor y Comité Directivo', responsible: 'Director de Proyecto', duration: '1 semana', cost: '$8,000' },
+            { code: '1.1.1.2', name: 'Plan de Gestión del Proyecto', phase: '1.1',
+              desc: 'Documento integral con cronograma, plan de recursos, riesgos, calidad, comunicaciones y líneas base del proyecto.',
+              criteria: 'Aprobación por Comité de Dirección', responsible: 'Director de Proyecto', duration: '3 semanas', cost: '$15,000' },
+            { code: '1.1.1.3', name: 'Plan de Comunicaciones', phase: '1.1',
+              desc: 'Define canales, frecuencia, formatos y responsables de comunicación durante todo el ciclo del proyecto.',
+              criteria: 'Validación de todos los stakeholders', responsible: 'PMO', duration: '1 semana', cost: '$5,000' },
+            { code: '1.1.2.1', name: 'Ambiente de Desarrollo Configurado', phase: '1.1',
+              desc: 'Sistema SAP DEV instalado y configurado con mandantes, transporte y conexiones a sistemas periféricos.',
+              criteria: 'Checklist de infraestructura al 100%', responsible: 'Basis/Infraestructura', duration: '2 semanas', cost: '$25,000' },
+            { code: '1.1.2.2', name: 'Herramientas de Proyecto Instaladas', phase: '1.1',
+              desc: 'Jira, Confluence, MS Project, Solution Manager configurados y accesibles para todo el equipo.',
+              criteria: 'Accesos otorgados a 100% del equipo', responsible: 'PMO', duration: '1 semana', cost: '$8,000' },
+            { code: '1.1.3.1', name: 'Equipo Interno Asignado', phase: '1.1',
+              desc: '15 recursos internos (key users, IT, finanzas) asignados formalmente con dedicación definida.',
+              criteria: 'Cartas de asignación firmadas', responsible: 'RRHH/PMO', duration: '2 semanas', cost: '$12,000' },
+            { code: '1.1.3.2', name: 'Consultores Externos Contratados', phase: '1.1',
+              desc: 'Equipo de 8 consultores SAP especializados en FI/CO, SD/MM, ABAP y Basis.',
+              criteria: 'Contratos firmados, onboarding completado', responsible: 'Compras/PMO', duration: '3 semanas', cost: '$45,000' },
+            
+            // Fase 1.2
+            { code: '1.2.1.1', name: 'Levantamiento Finanzas AS-IS', phase: '1.2',
+              desc: 'Documentación de procesos actuales de contabilidad, cuentas por pagar/cobrar, tesorería y reportes financieros.',
+              criteria: 'Validación del Controller', responsible: 'Consultor FI Senior', duration: '2 semanas', cost: '$18,000' },
+            { code: '1.2.1.2', name: 'Levantamiento Ventas AS-IS', phase: '1.2',
+              desc: 'Mapeo de ciclo de ventas actual: cotizaciones, pedidos, entregas, facturación y devoluciones.',
+              criteria: 'Sign-off del Director Comercial', responsible: 'Consultor SD Senior', duration: '2 semanas', cost: '$18,000' },
+            { code: '1.2.1.3', name: 'Levantamiento Logística AS-IS', phase: '1.2',
+              desc: 'Documentación de compras, inventarios, almacenes, movimientos de mercancía y gestión de proveedores.',
+              criteria: 'Validación del Gerente de Supply Chain', responsible: 'Consultor MM Senior', duration: '2 semanas', cost: '$18,000' },
+            { code: '1.2.2.1', name: 'Blueprint FI/CO Aprobado', phase: '1.2',
+              desc: 'Diseño TO-BE de procesos financieros incluyendo plan de cuentas, centros de costo, órdenes internas y flujos contables.',
+              criteria: 'Sign-off del CFO y Controller', responsible: 'Consultor SAP FI/CO Senior', duration: '4 semanas', cost: '$45,000' },
+            { code: '1.2.2.2', name: 'Blueprint SD/MM Aprobado', phase: '1.2',
+              desc: 'Diseño TO-BE de ventas y materiales: estructura organizacional, tipos de documentos, determinación de precios.',
+              criteria: 'Sign-off de Directores Comercial y Logística', responsible: 'Consultores SD/MM', duration: '4 semanas', cost: '$42,000' },
+            { code: '1.2.2.3', name: 'Blueprint PP/QM Aprobado', phase: '1.2',
+              desc: 'Diseño de producción y calidad: planificación, órdenes de fabricación, control de piso e inspecciones.',
+              criteria: 'Sign-off del Director de Operaciones', responsible: 'Consultor PP/QM', duration: '3 semanas', cost: '$35,000' },
+            { code: '1.2.3.1', name: 'Análisis de GAPs Completado', phase: '1.2',
+              desc: 'Identificación de 45 gaps entre procesos actuales y funcionalidad estándar SAP, clasificados por criticidad.',
+              criteria: 'Matriz de GAPs validada por módulo', responsible: 'Líder Funcional', duration: '2 semanas', cost: '$15,000' },
+            { code: '1.2.3.2', name: 'Soluciones de GAPs Definidas', phase: '1.2',
+              desc: 'Propuestas de solución: 30 por configuración, 10 desarrollos ABAP, 5 cambios de proceso.',
+              criteria: 'Aprobación de costos adicionales', responsible: 'Arquitecto SAP', duration: '2 semanas', cost: '$18,000' },
+
+            // Fase 1.3
+            { code: '1.3.1.1', name: 'Módulo FI/CO Configurado', phase: '1.3',
+              desc: 'Configuración completa de Finanzas y Controlling según blueprint: estructura organizacional, datos maestros y procesos.',
+              criteria: 'Pruebas unitarias al 100%', responsible: 'Equipo SAP FI/CO', duration: '6 semanas', cost: '$72,000' },
+            { code: '1.3.1.2', name: 'Módulo SD/MM Configurado', phase: '1.3',
+              desc: 'Configuración de Ventas y Materiales: pricing, partners, movimientos de inventario, proceso de compras.',
+              criteria: 'Pruebas unitarias al 100%', responsible: 'Equipo SAP SD/MM', duration: '6 semanas', cost: '$68,000' },
+            { code: '1.3.1.3', name: 'Módulo PP/QM Configurado', phase: '1.3',
+              desc: 'Configuración de Producción y Calidad: BOM, rutas, centros de trabajo, planes de inspección.',
+              criteria: 'Pruebas unitarias al 100%', responsible: 'Equipo SAP PP/QM', duration: '5 semanas', cost: '$55,000' },
+            { code: '1.3.2.1', name: 'Reportes Z Desarrollados', phase: '1.3',
+              desc: '25 reportes personalizados en ABAP para finanzas, ventas, inventarios y producción.',
+              criteria: 'Validación funcional de cada reporte', responsible: 'Equipo ABAP', duration: '4 semanas', cost: '$40,000' },
+            { code: '1.3.2.2', name: 'Interfaces Desarrolladas', phase: '1.3',
+              desc: '12 interfaces: bancos, nómina, WMS externo, portal B2B, facturación electrónica CFDI.',
+              criteria: 'Pruebas de integración exitosas', responsible: 'Equipo ABAP/PI', duration: '5 semanas', cost: '$55,000' },
+            { code: '1.3.2.3', name: 'Formularios SAP Script/Adobe', phase: '1.3',
+              desc: '18 formularios: facturas, órdenes de compra, remisiones, etiquetas, reportes fiscales.',
+              criteria: 'Aprobación de diseño por usuarios', responsible: 'Equipo ABAP', duration: '3 semanas', cost: '$28,000' },
+            { code: '1.3.3.1', name: 'Scripts de Prueba Documentados', phase: '1.3',
+              desc: '150 casos de prueba unitaria documentados en Solution Manager con datos de prueba.',
+              criteria: 'Cobertura mínima del 95%', responsible: 'QA Lead', duration: '2 semanas', cost: '$15,000' },
+            { code: '1.3.3.2', name: 'Defectos de Pruebas Corregidos', phase: '1.3',
+              desc: 'Resolución de todos los defectos críticos y mayores identificados en pruebas unitarias.',
+              criteria: '0 defectos críticos, <5 menores', responsible: 'Equipo Técnico', duration: '2 semanas', cost: '$18,000' },
+
+            // Fase 1.4
+            { code: '1.4.1.1', name: 'Escenarios End-to-End Probados', phase: '1.4',
+              desc: '25 escenarios de negocio completos: Order-to-Cash, Procure-to-Pay, Plan-to-Produce.',
+              criteria: '100% de escenarios exitosos', responsible: 'QA Lead', duration: '3 semanas', cost: '$25,000' },
+            { code: '1.4.1.2', name: 'Pruebas de Rendimiento Aprobadas', phase: '1.4',
+              desc: 'Pruebas de carga con 200 usuarios concurrentes, tiempo de respuesta <3 segundos.',
+              criteria: 'SLA de rendimiento cumplido', responsible: 'Basis/Performance', duration: '2 semanas', cost: '$20,000' },
+            { code: '1.4.2.1', name: 'Datos Maestros Migrados', phase: '1.4',
+              desc: 'Migración de clientes, proveedores, materiales, cuentas contables con validación de integridad.',
+              criteria: 'Precisión ≥98%, reconciliación aprobada', responsible: 'Especialista Migración', duration: '4 semanas', cost: '$35,000' },
+            { code: '1.4.2.2', name: 'Saldos Iniciales Cargados', phase: '1.4',
+              desc: 'Carga de saldos contables, inventarios, cuentas por cobrar/pagar al corte de migración.',
+              criteria: 'Cuadre contable al 100%', responsible: 'Equipo FI + Contabilidad', duration: '2 semanas', cost: '$22,000' },
+            { code: '1.4.2.3', name: 'Datos Históricos Migrados', phase: '1.4',
+              desc: 'Migración de 3 años de histórico de transacciones para reportes y análisis.',
+              criteria: 'Reportes históricos validados', responsible: 'Especialista Migración', duration: '2 semanas', cost: '$18,000' },
+            { code: '1.4.3.1', name: 'Casos UAT Ejecutados', phase: '1.4',
+              desc: '180 casos de prueba ejecutados por usuarios finales en ambiente QAS.',
+              criteria: 'Tasa de éxito ≥95%', responsible: 'Key Users', duration: '3 semanas', cost: '$28,000' },
+            { code: '1.4.3.2', name: 'Sign-off de Usuarios Obtenido', phase: '1.4',
+              desc: 'Documento formal de aceptación firmado por representantes de cada área de negocio.',
+              criteria: 'Firmas de 12 Key Users', responsible: 'PMO', duration: '1 semana', cost: '$8,000' },
+
+            // Fase 1.5
+            { code: '1.5.1.1', name: 'Usuarios Clave Certificados', phase: '1.5',
+              desc: '35 Key Users capacitados y certificados con calificación mínima de 80/100.',
+              criteria: '100% certificados ≥80/100', responsible: 'Especialista Capacitación', duration: '3 semanas', cost: '$32,000' },
+            { code: '1.5.1.2', name: 'Usuarios Finales Capacitados', phase: '1.5',
+              desc: '250 usuarios finales entrenados en sus transacciones específicas por rol.',
+              criteria: 'Asistencia ≥95%, evaluación ≥70/100', responsible: 'Key Users + Capacitación', duration: '4 semanas', cost: '$45,000' },
+            { code: '1.5.1.3', name: 'Manuales de Usuario Entregados', phase: '1.5',
+              desc: '45 manuales de usuario por proceso, quick reference cards y videos tutoriales.',
+              criteria: 'Disponibles en SharePoint', responsible: 'Documentación', duration: '2 semanas', cost: '$18,000' },
+            { code: '1.5.2.1', name: 'Plan de Cutover Ejecutado', phase: '1.5',
+              desc: 'Ejecución del plan de migración final: cierre de sistemas legacy, carga final, validaciones.',
+              criteria: 'Checklist de cutover al 100%', responsible: 'Cutover Manager', duration: '1 semana', cost: '$15,000' },
+            { code: '1.5.2.2', name: 'Ambiente Productivo Activado', phase: '1.5',
+              desc: 'Sistema SAP PRD en línea, transporte final aplicado, accesos productivos habilitados.',
+              criteria: 'Sistema disponible 24/7', responsible: 'Basis', duration: '3 días', cost: '$12,000' },
+            { code: '1.5.2.3', name: 'Go-Live Certificado', phase: '1.5',
+              desc: 'Sistema en producción operando, procesos críticos validados, usuarios trabajando.',
+              criteria: 'Checklist Go-Live 100%, aprobación Comité', responsible: 'Director de Proyecto', duration: '1 semana', cost: '$25,000' },
+
+            // Fase 1.6
+            { code: '1.6.1.1', name: 'Incidentes Críticos Resueltos', phase: '1.6',
+              desc: 'Resolución de incidentes de prioridad alta durante período de hipercare (30 días).',
+              criteria: 'SLA de resolución cumplido', responsible: 'Equipo Soporte', duration: '4 semanas', cost: '$35,000' },
+            { code: '1.6.1.2', name: 'Ajustes de Configuración Aplicados', phase: '1.6',
+              desc: 'Afinación de configuración basada en operación real: pricing, reportes, workflows.',
+              criteria: 'Aprobación de cambios por CAB', responsible: 'Consultores SAP', duration: '3 semanas', cost: '$25,000' },
+            { code: '1.6.2.1', name: 'Documentación Técnica Entregada', phase: '1.6',
+              desc: 'Manuales técnicos, diagramas de arquitectura, documentación de desarrollos ABAP.',
+              criteria: 'Revisión técnica aprobada', responsible: 'Arquitecto SAP', duration: '2 semanas', cost: '$18,000' },
+            { code: '1.6.2.2', name: 'Equipo Soporte Interno Capacitado', phase: '1.6',
+              desc: '8 recursos de TI entrenados para soporte Nivel 1 y Nivel 2 de SAP.',
+              criteria: 'Certificación de soporte obtenida', responsible: 'Consultores + TI', duration: '3 semanas', cost: '$28,000' },
+            { code: '1.6.3.1', name: 'Lecciones Aprendidas Documentadas', phase: '1.6',
+              desc: 'Documento con 50+ lecciones aprendidas, mejores prácticas y recomendaciones.',
+              criteria: 'Sesión de retrospectiva realizada', responsible: 'PMO', duration: '1 semana', cost: '$8,000' },
+            { code: '1.6.3.2', name: 'Acta de Cierre Firmada', phase: '1.6',
+              desc: 'Documento formal de cierre con aceptación final del proyecto por parte del Sponsor.',
+              criteria: 'Firma del Sponsor y Steering Committee', responsible: 'Director de Proyecto', duration: '1 semana', cost: '$5,000' }
+        ];
+
+        // ============================================
+        // 3. RENDERIZADO DEL DIAGRAMA
+        // ============================================
+        function renderNode(node) {
+            const container = document.createElement('div');
+            container.className = 'wbs-node';
+
+            // Node box
+            const box = document.createElement('div');
+            let levelClass = `level-${node.level}`;
+            if (node.isPackage) levelClass = 'package';
+            box.className = `node-box ${levelClass}`;
+
+            box.innerHTML = `
+                <div class="node-code">${node.code}</div>
+                <div class="node-title">${node.title}</div>
+                ${node.isPackage ? '<div class="package-indicator">📦 Paquete</div>' : ''}
+            `;
+
+            // Toggle button for nodes with children
+            if (node.children && node.children.length > 0) {
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'toggle-btn';
+                toggleBtn.textContent = '−';
+                toggleBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleNode(toggleBtn);
+                };
+                box.appendChild(toggleBtn);
+            }
+
+            container.appendChild(box);
+
+            // Render children
+            if (node.children && node.children.length > 0) {
+                const vertLine = document.createElement('div');
+                vertLine.className = 'vertical-line';
+                container.appendChild(vertLine);
+
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'children-container';
+
+                node.children.forEach(child => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'child-wrapper';
+
+                    const childVertLine = document.createElement('div');
+                    childVertLine.className = 'vertical-line';
+                    wrapper.appendChild(childVertLine);
+
+                    wrapper.appendChild(renderNode(child));
+                    childrenContainer.appendChild(wrapper);
+                });
+
+                container.appendChild(childrenContainer);
+            }
+
+            return container;
+        }
+
+        // Toggle node expand/collapse
+        function toggleNode(btn) {
+            const nodeBox = btn.closest('.node-box');
+            const wbsNode = nodeBox.closest('.wbs-node');
+            const childrenContainer = wbsNode.querySelector(':scope > .children-container');
+            const vertLine = wbsNode.querySelector(':scope > .vertical-line');
+
+            if (childrenContainer) {
+                const isHidden = childrenContainer.classList.contains('hidden');
+                if (isHidden) {
+                    childrenContainer.classList.remove('hidden');
+                    if (vertLine) vertLine.style.display = '';
+                    btn.textContent = '−';
+                } else {
+                    childrenContainer.classList.add('hidden');
+                    if (vertLine) vertLine.style.display = 'none';
+                    btn.textContent = '+';
+                }
+            }
+        }
+
+        // ============================================
+        // 4. RENDERIZADO DEL DICCIONARIO
+        // ============================================
+        function renderDictionary(filter = 'all') {
+            const grid = document.getElementById('dictionary-grid');
+            grid.innerHTML = '';
+
+            const filteredData = filter === 'all' 
+                ? dictionaryData 
+                : dictionaryData.filter(item => item.code.startsWith(filter));
+
+            filteredData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'dict-card animate-in';
+                card.style.animationDelay = `${index * 0.05}s`;
+
+                card.innerHTML = `
+                    <div class="dict-header">
+                        <span class="dict-code">${item.code}</span>
+                        <span class="dict-cost">${item.cost}</span>
+                    </div>
+                    <h3 class="dict-title">${item.name}</h3>
+                    <p class="dict-desc">${item.desc}</p>
+                    <div class="dict-meta">
+                        <div class="dict-meta-item">
+                            <div class="dict-meta-label">👤 Responsable</div>
+                            <div class="dict-meta-value">${item.responsible}</div>
+                        </div>
+                        <div class="dict-meta-item">
+                            <div class="dict-meta-label">⏱️ Duración</div>
+                            <div class="dict-meta-value">${item.duration}</div>
+                        </div>
+                        <div class="dict-criteria">
+                            <div class="dict-meta-label">✅ Criterio de Aceptación</div>
+                            <div class="dict-meta-value">${item.criteria}</div>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function filterDict(phase) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            renderDictionary(phase);
+        }
+
+        // ============================================
+        // 5. ZOOM Y PAN
+        // ============================================
+        let scale = 1;
+        let panning = false;
+        let pointX = 0;
+        let pointY = 0;
+        let startX = 0;
+        let startY = 0;
+
+        const viewport = document.getElementById('diagram-viewport');
+        const content = document.getElementById('wbs-content');
+
+        function setTransform() {
+            content.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+            document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+        }
+
+        function zoomIn() {
+            scale = Math.min(scale + 0.15, 3);
+            setTransform();
+        }
+
+        function zoomOut() {
+            scale = Math.max(scale - 0.15, 0.2);
+            setTransform();
+        }
+
+        function resetZoom() {
+            const viewportRect = viewport.getBoundingClientRect();
+            
+            // Reset transform to measure real size
+            content.style.transform = 'none';
+            void content.offsetWidth;
+            
+            const realWidth = content.scrollWidth;
+            const realHeight = content.scrollHeight;
+
+            // Calculate scale to fit content in viewport
+            const scaleX = (viewportRect.width - 60) / realWidth;
+            const scaleY = (viewportRect.height - 60) / realHeight;
+            scale = Math.min(scaleX, scaleY, 1);
+            if (scale < 0.25) scale = 0.25;
+
+            // Calculate position to center the scaled content
+            const scaledWidth = realWidth * scale;
+            const scaledHeight = realHeight * scale;
+            
+            // Center in viewport
+            pointX = Math.max(0, (viewportRect.width - scaledWidth) / 2);
+            pointY = Math.max(0, (viewportRect.height - scaledHeight) / 2);
+
+            setTransform();
+        }
+
+        // Mouse Pan
+        viewport.onmousedown = function(e) {
+            e.preventDefault();
+            startX = e.clientX - pointX;
+            startY = e.clientY - pointY;
+            panning = true;
+            viewport.style.cursor = 'grabbing';
+        };
+
+        viewport.onmouseup = function() {
+            panning = false;
+            viewport.style.cursor = 'grab';
+        };
+
+        viewport.onmouseleave = function() {
+            panning = false;
+            viewport.style.cursor = 'grab';
+        };
+
+        viewport.onmousemove = function(e) {
+            if (!panning) return;
+            e.preventDefault();
+            pointX = e.clientX - startX;
+            pointY = e.clientY - startY;
+            setTransform();
+        };
+
+        // Touch Pan (Mobile)
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
+        viewport.ontouchstart = function(e) {
+            if (e.touches.length === 1) {
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+                panning = true;
+            }
+        };
+
+        viewport.ontouchmove = function(e) {
+            if (panning && e.touches.length === 1) {
+                e.preventDefault();
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+
+                pointX += currentX - lastTouchX;
+                pointY += currentY - lastTouchY;
+
+                lastTouchX = currentX;
+                lastTouchY = currentY;
+
+                setTransform();
+            }
+        };
+
+        viewport.ontouchend = function() {
+            panning = false;
+        };
+
+        // Mouse Wheel Zoom
+        viewport.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            scale = Math.max(0.2, Math.min(3, scale + delta));
+            setTransform();
+        }, { passive: false });
+
+        // ============================================
+        // 6. TAB SWITCHING
+        // ============================================
+        function switchTab(tab) {
+            const tabDiagram = document.getElementById('tab-diagram');
+            const tabDict = document.getElementById('tab-dictionary');
+            const btnDiagram = document.getElementById('btn-diagram');
+            const btnDict = document.getElementById('btn-dictionary');
+
+            if (tab === 'diagram') {
+                tabDiagram.classList.add('active');
+                tabDict.classList.remove('active');
+                btnDiagram.classList.add('active');
+                btnDict.classList.remove('active');
+                setTimeout(resetZoom, 100);
+            } else {
+                tabDiagram.classList.remove('active');
+                tabDict.classList.add('active');
+                btnDiagram.classList.remove('active');
+                btnDict.classList.add('active');
+            }
+        }
+
+        // ============================================
+        // 7. INICIALIZACIÓN
+        // ============================================
+        
+        // Render content on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('wbs-root').appendChild(renderNode(wbsData));
+            renderDictionary();
+        });
+
+        // Wait for everything (including fonts) to load before calculating zoom
+        window.addEventListener('load', () => {
+            resetZoom();
+        });
+
+        // Also reset zoom when window is resized
+        window.addEventListener('resize', () => {
+            clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(resetZoom, 250);
+        });
+    </script>
+</body>
+</html>
